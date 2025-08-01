@@ -2,6 +2,7 @@ import discord
 from discord.ext import tasks, commands
 import aiohttp
 import os
+from datetime import datetime
 
 TOKEN = os.getenv("DISCORD_BOT_TOKEN")
 CANAL_ID = int(os.getenv("DISCORD_CHANNEL_ID"))
@@ -23,20 +24,24 @@ async def enviar_precio_token():
     await enviar_precio_y_mensaje(canal)
 
 async def enviar_precio_y_mensaje(canal):
+    url = 'https://data.wowtoken.app/v2/current/retail.json'
     async with aiohttp.ClientSession() as session:
-        async with session.get('https://wowtoken.info/data.json') as resp:
+        async with session.get(url) as resp:
             if resp.status == 200:
                 data = await resp.json()
-                eu_data = data['eu']
-                precio = eu_data['buy']
-                timestamp = eu_data['updated']
-                mensaje = f"💰 **Token WoW (EU)**: {precio:,}g\n🕒 Actualizado: <t:{int(timestamp)}:R>"
-                print(mensaje)
-                await canal.send(mensaje)
+                eu_data = data.get('eu')
+                if eu_data and len(eu_data) == 2:
+                    timestamp_str, precio = eu_data
+                    # Convertir ISO8601 a timestamp UNIX
+                    dt = datetime.fromisoformat(timestamp_str.replace("Z", "+00:00"))
+                    timestamp_unix = int(dt.timestamp())
+                    mensaje = f"💰 **Token WoW (EU)**: {precio:,}g\n🕒 Actualizado: <t:{timestamp_unix}:R>"
+                    await canal.send(mensaje)
+                else:
+                    await canal.send("❌ No se encontró información válida para EU.")
             else:
                 await canal.send("❌ Error al obtener el precio del token.")
 
-# Comando para forzar enviar el precio en el canal donde se escribe el comando
 @bot.command(name="precio")
 async def precio(ctx):
     await enviar_precio_y_mensaje(ctx.channel)
