@@ -14,9 +14,10 @@ async def on_ready():
     print(f'✅ Bot conectado como {bot.user}')
     enviar_precio_token.start()
 
-@tasks.loop(hours=1)
+@tasks.loop(minutes=1)
 async def enviar_precio_token():
     canal = bot.get_channel(CANAL_ID)
+    print("Pito")
     if not canal:
         print("❌ Canal no encontrado.")
         return
