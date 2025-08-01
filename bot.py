@@ -17,11 +17,12 @@ async def on_ready():
 @tasks.loop(minutes=1)
 async def enviar_precio_token():
     canal = bot.get_channel(CANAL_ID)
-    print("Pito")
     if not canal:
         print("❌ Canal no encontrado.")
         return
+    await enviar_precio_y_mensaje(canal)
 
+async def enviar_precio_y_mensaje(canal):
     async with aiohttp.ClientSession() as session:
         async with session.get('https://wowtoken.info/data.json') as resp:
             if resp.status == 200:
@@ -30,8 +31,14 @@ async def enviar_precio_token():
                 precio = eu_data['buy']
                 timestamp = eu_data['updated']
                 mensaje = f"💰 **Token WoW (EU)**: {precio:,}g\n🕒 Actualizado: <t:{int(timestamp)}:R>"
+                print(mensaje)
                 await canal.send(mensaje)
             else:
                 await canal.send("❌ Error al obtener el precio del token.")
+
+# Comando para forzar enviar el precio en el canal donde se escribe el comando
+@bot.command(name="precio")
+async def precio(ctx):
+    await enviar_precio_y_mensaje(ctx.channel)
 
 bot.run(TOKEN)
